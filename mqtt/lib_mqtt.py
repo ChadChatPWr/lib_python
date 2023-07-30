@@ -24,7 +24,11 @@ def disconnect(component_id: int):
 
 
 def publish(topic: int, data: str, qos: int):
-    client.publish(topic, data, qos, retain=False)
+    res, mid = client.publish(topic, data, qos, retain=False)
+    if res == mqtt.MQTT_ERR_SUCCESS:
+        print("Publish sent successfully")
+    else:
+        print("Publish failed with code: "+res)
 
 
 def subscribe(topic: int, qos: int):
@@ -51,15 +55,15 @@ def on_disconnect(client, userdata, rc):
 
 
 def on_publish(client, userdata, mid):
-    print("Succesfully received the message from "+client)
+    print("Successfully received the message from "+client)
 
 
 def on_subscribe(client, userdata, mid, granted_qos):
-    print("Succesfully subscribed to the topic")
+    print("Successfully subscribed to the topic")
 
 
 def on_unsubscribe(client, userdata, mid):
-    print("Succesfully unsubscribed from the topic")
+    print("Successfully unsubscribed from the topic")
 
 
 client.on_message = on_message
