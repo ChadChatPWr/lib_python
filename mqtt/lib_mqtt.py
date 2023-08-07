@@ -11,8 +11,7 @@ client_component_ids = {}
 
 
 def is_topic(nr: str):
-    nr = int(nr)
-    if 0 < nr < 6:
+    if 0 < int(nr) < 6:
         return True
     else:
         return False
@@ -20,6 +19,13 @@ def is_topic(nr: str):
 
 def is_qos(nr: int):
     if -1 < nr < 3:
+        return True
+    else:
+        return False
+
+
+def is_compid(nr: str):
+    if 0 < int(nr[0]) < 4:
         return True
     else:
         return False
@@ -46,7 +52,7 @@ def on_publish(client, userdata, mid):
 
 
 def on_subscribe(client, userdata, mid, granted_qos):
-    print("Successfully subscribed to the topic")
+    print("Successfully subscribed to topic: ", userdata["subscribed_topic"])
 
 
 def on_unsubscribe(client, userdata, mid):
@@ -54,61 +60,66 @@ def on_unsubscribe(client, userdata, mid):
 
 
 def connect(component_id: str, topic: str):
+    if not (is_compid(component_id[0])):
+        print("Invalid component id!")
+        return 1
+    if not (is_topic(topic)):
+        print("Invalid topic number!")
+        return 1
     global client
     client = mqtt.Client(client_id=component_id, clean_session=False, userdata=None, protocol=4,)
-    client.will_set(topic)
     client.on_message = on_message
     client.on_connect = on_connect
     client.on_disconnect = on_disconnect
     client.on_publish = on_publish
     client.on_subscribe = on_subscribe
     client.on_unsubscribe = on_unsubscribe
+    client.user_data_set({"subscribed_topic": topic})
     client.connect(broker_address, broker_port, 60)
     client_component_ids[client] = component_id
     return client
 
 
 def renew(component_id: str):
-    client.reinitialise(client_id=component_id, clean_session=True, userdata=None)
+    client.reinitialise(client_id=component_id, clean_session=False, userdata=None)
 
 
-def disconnect(component_id: str):
-    client.disconnect()
-
-
-def publish(topic: str, data: str, qos: str):
-    if not (is_topic(topic)):
-        print("Invalid topic number!")
-        return 1
-    if not (is_qos(qos)):
-        print("Invalid Qos number!")
-        return 1
-    res, mid = client.publish(topic, data, qos, retain=False)
-    if res == mqtt.MQTT_ERR_SUCCESS:
-        print("Publish sent successfully")
+def disconnect(component_id):
+    if component_id is not None:
+        client.disconnect()
     else:
-        print("Publish failed with code: " + res)
+        print("Invalid component ID")
 
 
-def subscribe(topic: str, qos: str):
+def publish(topic: str, data: str, qos: int):
     if not (is_topic(topic)):
         print("Invalid topic number!")
         return 1
     if not (is_qos(qos)):
         print("Invalid Qos number!")
         return 1
-    client.subscribe(topic, qos)
+    client.publish(topic=topic, payload=data, qos=qos, retain=False)
+
+
+def subscribe(topic: str, qos: int):
+    if not (is_topic(topic)):
+        print("Invalid topic number!")
+        return 1
+    if not (is_qos(qos)):
+        print("Invalid Qos number!")
+        return 1
+    client.subscribe(topic=topic, qos=qos)
 
 
 def unsubscribe(topic: str):
     if not (is_topic(topic)):
         print("Invalid topic number!")
         return 1
-    client.unsubscribe(topic)
+    client.unsubscribe(topic=topic)
 
 
-def loop(client):
-    while True:
+def loop(user):
+    if user:
         client.loop()
 
 
